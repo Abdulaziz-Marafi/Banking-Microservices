@@ -18,14 +18,14 @@ import java.time.LocalDateTime;
 public class Customer {
 
     @Id
-    @Column(name ="cust_id", nullable = false, unique = true)
+    @Column(name ="customer_id", nullable = false, unique = true)
     private Long customerId;
 
     @Column(nullable = false)
     private String name;
 
-    @Column(name ="legal_id", nullable = false, unique = true)
-    private String legalId;
+    @Column(name ="civil_id", nullable = false, unique = true)
+    private String civilId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

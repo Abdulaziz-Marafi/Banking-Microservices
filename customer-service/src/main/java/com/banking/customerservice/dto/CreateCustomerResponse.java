@@ -13,7 +13,7 @@ public class CreateCustomerResponse {
 
     private Long customerId;
     private String name;
-    private String legalId;
+    private String civilId;
     private CustomerType type;
     private String address;
     private String email;

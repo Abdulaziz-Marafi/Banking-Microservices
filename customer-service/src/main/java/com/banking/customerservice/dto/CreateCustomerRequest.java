@@ -3,7 +3,6 @@ package com.banking.customerservice.dto;
 import com.banking.customerservice.enums.CustomerType;
 import jakarta.validation.constraints.*;
 import lombok.Data;
-import org.springframework.security.core.parameters.P;
 
 // Request DTO for creating a customer (email & mobile not required)
 @Data
@@ -13,13 +12,13 @@ public class CreateCustomerRequest {
     @Size(min = 2, max = 100, message ="Name must be between 2 and 100 characters")
     private String name;
 
-    @NotBlank(message = "Legal ID is required")
-    private String legalId;
+    @NotBlank(message = "Civil ID is required")
+    private String civilId;
 
     @NotNull(message = "Customer Type is required")
     private CustomerType type;
 
-    @NotNull(message = "Address is required")
+    @NotBlank(message = "Address is required")
     private String address;
 
     @Email(message = "Invalid email format")
