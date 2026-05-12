@@ -27,4 +27,4 @@ server:
 
 springdoc:
   swagger-ui:
-    path: /swagger-ui.html5
+    path: /swagger-ui.html

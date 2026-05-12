@@ -56,7 +56,7 @@ public class CustomerServiceImpl implements CustomerService{
         CustomerCreatedEvent event = new CustomerCreatedEvent(
                 saved.getCustomerId(),
                 saved.getName(),
-                saved.getType()
+                saved.getType()  // maps to customerType field via @AllArgsConstructor order
         );
 
         rabbitTemplate.convertAndSend(EXCHANGE, CUSTOMER_ROUTING_KEY, event);

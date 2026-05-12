@@ -13,5 +13,5 @@ import lombok.NoArgsConstructor;
 public class CustomerCreatedEvent {
     private Long customerId;
     private String name;
-    private CustomerType type;
+    private CustomerType customerType;
 }
