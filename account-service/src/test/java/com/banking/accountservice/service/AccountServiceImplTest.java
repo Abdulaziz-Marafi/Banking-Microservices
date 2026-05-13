@@ -2,11 +2,14 @@ package com.banking.accountservice.service;
 
 import com.banking.accountservice.dto.CreateAccountRequest;
 import com.banking.accountservice.dto.CreateAccountResponse;
+import com.banking.accountservice.dto.TransactionRequest;
 import com.banking.accountservice.entity.Account;
 import com.banking.accountservice.enums.AccountStatus;
 import com.banking.accountservice.enums.AccountType;
 import com.banking.accountservice.event.AccountCreatedEvent;
+import com.banking.accountservice.exception.AccountNotActiveException;
 import com.banking.accountservice.exception.AccountNotFoundException;
+import com.banking.accountservice.exception.InsufficientFundsException;
 import com.banking.accountservice.exception.MaxAccountsReachedException;
 import com.banking.accountservice.exception.SalaryAccountExistsException;
 import com.banking.accountservice.repository.AccountRepository;
@@ -176,6 +179,106 @@ class AccountServiceImplTest {
 
         assertThatThrownBy(() -> accountService.updateAccountStatus(9999999999L, "CLOSED"))
                 .isInstanceOf(AccountNotFoundException.class);
+    }
+
+    // --- deposit ---
+
+    @Test
+    void deposit_success_addsAmountToBalance() {
+        account.setBalance(new BigDecimal("100.000"));
+        TransactionRequest tx = new TransactionRequest();
+        tx.setAmount(new BigDecimal("50.000"));
+
+        when(accountRepository.findById(1234567100L)).thenReturn(Optional.of(account));
+        when(accountRepository.save(any(Account.class))).thenAnswer(i -> i.getArgument(0));
+
+        CreateAccountResponse response = accountService.deposit(1234567100L, tx);
+
+        assertThat(response.getBalance()).isEqualByComparingTo(new BigDecimal("150.000"));
+    }
+
+    @Test
+    void deposit_accountNotFound_throwsAccountNotFoundException() {
+        when(accountRepository.findById(9999999999L)).thenReturn(Optional.empty());
+
+        TransactionRequest tx = new TransactionRequest();
+        tx.setAmount(new BigDecimal("50.000"));
+
+        assertThatThrownBy(() -> accountService.deposit(9999999999L, tx))
+                .isInstanceOf(AccountNotFoundException.class);
+    }
+
+    @Test
+    void deposit_accountNotActive_throwsAccountNotActiveException() {
+        account.setStatus(AccountStatus.FROZEN);
+        TransactionRequest tx = new TransactionRequest();
+        tx.setAmount(new BigDecimal("50.000"));
+
+        when(accountRepository.findById(1234567100L)).thenReturn(Optional.of(account));
+
+        assertThatThrownBy(() -> accountService.deposit(1234567100L, tx))
+                .isInstanceOf(AccountNotActiveException.class);
+
+        verify(accountRepository, never()).save(any());
+    }
+
+    // --- withdraw ---
+
+    @Test
+    void withdraw_success_subtractsAmountFromBalance() {
+        account.setBalance(new BigDecimal("200.000"));
+        TransactionRequest tx = new TransactionRequest();
+        tx.setAmount(new BigDecimal("75.000"));
+
+        when(accountRepository.findById(1234567100L)).thenReturn(Optional.of(account));
+        when(accountRepository.save(any(Account.class))).thenAnswer(i -> i.getArgument(0));
+
+        CreateAccountResponse response = accountService.withdraw(1234567100L, tx);
+
+        assertThat(response.getBalance()).isEqualByComparingTo(new BigDecimal("125.000"));
+    }
+
+    @Test
+    void withdraw_insufficientFunds_throwsInsufficientFundsException() {
+        account.setBalance(new BigDecimal("10.000"));
+        TransactionRequest tx = new TransactionRequest();
+        tx.setAmount(new BigDecimal("500.000"));
+
+        when(accountRepository.findById(1234567100L)).thenReturn(Optional.of(account));
+
+        assertThatThrownBy(() -> accountService.withdraw(1234567100L, tx))
+                .isInstanceOf(InsufficientFundsException.class)
+                .hasMessageContaining("insufficient funds");
+
+        verify(accountRepository, never()).save(any());
+    }
+
+    @Test
+    void withdraw_accountNotActive_throwsAccountNotActiveException() {
+        account.setStatus(AccountStatus.CLOSED);
+        TransactionRequest tx = new TransactionRequest();
+        tx.setAmount(new BigDecimal("50.000"));
+
+        when(accountRepository.findById(1234567100L)).thenReturn(Optional.of(account));
+
+        assertThatThrownBy(() -> accountService.withdraw(1234567100L, tx))
+                .isInstanceOf(AccountNotActiveException.class);
+
+        verify(accountRepository, never()).save(any());
+    }
+
+    @Test
+    void withdraw_exactBalance_succeeds() {
+        account.setBalance(new BigDecimal("100.000"));
+        TransactionRequest tx = new TransactionRequest();
+        tx.setAmount(new BigDecimal("100.000"));
+
+        when(accountRepository.findById(1234567100L)).thenReturn(Optional.of(account));
+        when(accountRepository.save(any(Account.class))).thenAnswer(i -> i.getArgument(0));
+
+        CreateAccountResponse response = accountService.withdraw(1234567100L, tx);
+
+        assertThat(response.getBalance()).isEqualByComparingTo(BigDecimal.ZERO);
     }
 
     // --- deleteAccount ---

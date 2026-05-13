@@ -2,6 +2,7 @@ package com.banking.accountservice.controller;
 
 import com.banking.accountservice.dto.CreateAccountRequest;
 import com.banking.accountservice.dto.CreateAccountResponse;
+import com.banking.accountservice.dto.TransactionRequest;
 import com.banking.accountservice.service.AccountService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +49,20 @@ public class AccountController {
     public ResponseEntity<Void> deleteAccount(@PathVariable Long accountId) {
         accountService.deleteAccount(accountId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{accountId}/deposit")
+    public ResponseEntity<CreateAccountResponse> deposit(
+            @PathVariable Long accountId,
+            @Valid @RequestBody TransactionRequest request) {
+        return ResponseEntity.ok(accountService.deposit(accountId, request));
+    }
+
+    @PostMapping("/{accountId}/withdraw")
+    public ResponseEntity<CreateAccountResponse> withdraw(
+            @PathVariable Long accountId,
+            @Valid @RequestBody TransactionRequest request) {
+        return ResponseEntity.ok(accountService.withdraw(accountId, request));
     }
 
 }

@@ -2,11 +2,14 @@ package com.banking.accountservice.service;
 
 import com.banking.accountservice.dto.CreateAccountRequest;
 import com.banking.accountservice.dto.CreateAccountResponse;
+import com.banking.accountservice.dto.TransactionRequest;
 import com.banking.accountservice.entity.Account;
 import com.banking.accountservice.enums.AccountStatus;
 import com.banking.accountservice.enums.AccountType;
 import com.banking.accountservice.event.AccountCreatedEvent;
+import com.banking.accountservice.exception.AccountNotActiveException;
 import com.banking.accountservice.exception.AccountNotFoundException;
+import com.banking.accountservice.exception.InsufficientFundsException;
 import com.banking.accountservice.exception.MaxAccountsReachedException;
 import com.banking.accountservice.exception.SalaryAccountExistsException;
 import com.banking.accountservice.repository.AccountRepository;
@@ -109,6 +112,42 @@ public class AccountServiceImpl implements AccountService{
         log.info("Deleted account: {}", accountId);
     }
 
+
+    @Override
+    @Transactional
+    public CreateAccountResponse deposit(Long accountId, TransactionRequest request) {
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new AccountNotFoundException(accountId));
+
+        if (account.getStatus() != AccountStatus.ACTIVE) {
+            throw new AccountNotActiveException(accountId, account.getStatus());
+        }
+
+        account.setBalance(account.getBalance().add(request.getAmount()));
+        Account saved = accountRepository.save(account);
+        log.info("Deposited {} to account {}. New balance: {}", request.getAmount(), accountId, saved.getBalance());
+        return toResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public CreateAccountResponse withdraw(Long accountId, TransactionRequest request) {
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new AccountNotFoundException(accountId));
+
+        if (account.getStatus() != AccountStatus.ACTIVE) {
+            throw new AccountNotActiveException(accountId, account.getStatus());
+        }
+
+        if (account.getBalance().compareTo(request.getAmount()) < 0) {
+            throw new InsufficientFundsException(accountId, account.getBalance(), request.getAmount());
+        }
+
+        account.setBalance(account.getBalance().subtract(request.getAmount()));
+        Account saved = accountRepository.save(account);
+        log.info("Withdrew {} from account {}. New balance: {}", request.getAmount(), accountId, saved.getBalance());
+        return toResponse(saved);
+    }
 
     // ---- Helper Functions ----
 
